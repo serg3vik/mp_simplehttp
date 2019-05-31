@@ -57,9 +57,15 @@ int Manager::init() {
 //==============================================================================
 //
 //==============================================================================
+
+static bool leastbusy(Worker *a, Worker *b) {
+    return a->CpuUsage() < b->CpuUsage();
+}
+
 Worker* Manager::getLeastBusyWorker() {
     #if 1
-    auto a = std::min_element(m_workers.begin(), m_workers.end(), [](auto a, auto b){return a->CpuUsage() < b->CpuUsage();});
+//    auto a = std::min_element(m_workers.begin(), m_workers.end(), [](auto a, auto b){return a->CpuUsage() < b->CpuUsage();});
+    auto a = std::min_element(m_workers.begin(), m_workers.end(), &leastbusy);
     return *a;
     #else
     return m_workers.at(0); // For DEBUG only!
