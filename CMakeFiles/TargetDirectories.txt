@@ -1,3 +1,0 @@
-/home/sie/__git_projects/mp_simplehttp/CMakeFiles/rebuild_cache.dir
-/home/sie/__git_projects/mp_simplehttp/CMakeFiles/final.dir
-/home/sie/__git_projects/mp_simplehttp/CMakeFiles/edit_cache.dir
