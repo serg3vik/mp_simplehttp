@@ -148,7 +148,13 @@ int HttpServer::onGET(char *request) {
     char *url  = strtok(NULL, " ");	    // URL
     char *http_ver = strtok(NULL, " \r\n"); // HTTP standard version
 
+    /* Ignoring HTTP parameters */
+    url = strtok(url, "?");
+
     fprintf_mp(stdout, "GET handler is here!");
+
+    fprintf_mp(stdout, "URL: %s\r\n", (url != NULL) ? url : "NULL" );
+    return 0;
 
 //    printf("GET handler is here! [%s %s %s]\r\n", type, url, http_ver);
 //    fflush(stdout);
