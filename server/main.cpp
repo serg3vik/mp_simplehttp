@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -15,12 +16,14 @@
 #include "fd_pass.h"
 #include "manager.h"
 
+#include "error_handler.h"
+
 //==============================================================================
 static const uint16_t DEFAULT_SERVER_PORT = 8888;
 
 //==============================================================================
-static Manager MP_Manager;
 
+const char *RootPath = nullptr;
 
 //==============================================================================
 //
@@ -28,9 +31,9 @@ static Manager MP_Manager;
 void signalHandler(int sig) {
 
     if (sig == SIGTERM) {
-	printf("Kill \'em ALL!\n");
-
-	MP_Manager.killAll();
+	fprintf_mp(stdout, "Kill \'em ALL!\n");
+	Manager::instance()->killAll();
+	deinitLog();
 	exit(1);
     } else {
 	// waitpid() might overwrite errno, so we save and restore it:
@@ -45,130 +48,168 @@ void signalHandler(int sig) {
 //==============================================================================
 //
 //==============================================================================
+struct globalArgs_t {
+    const char *ipaddr;
+    const char *port;
+    const char *root_dir;
+} globalArgs;
 
+static const char *optString = "h:p:d:";
 //==============================================================================
-//
-//==============================================================================
-//void child(int sock) {
-//    int fd;
-//    char    buf[16];
-//    ssize_t size;
-
-//    sleep(1);
-//    for (;;) {
-//        size = sock_fd_read(sock, buf, sizeof(buf), &fd);
-//        if (size <= 0)
-//            break;
-//        printf ("read %d\n", size);
-//        if (fd != -1) {
-//            write(fd, "hello, world\n", 13);
-//            close(fd);
-//        }
-//    }
-//}
-
-//==============================================================================
-//
-//==============================================================================
-//int parent(int int_sock, int ext_sock) {
-
-//    if (listen(ext_sock, SOMAXCONN) < 0) {
-//	perror("listen");
-//	return -1;
-//    }
-//    while (1) {
-//	int SlaveSocket = accept(ext_sock, NULL, NULL);
-//	if (SlaveSocket < 0) {
-//	    /* Got incoming connection! */
-//	    ssize_t size = sock_fd_write(int_sock, "1", 1, SlaveSocket);
-//	    if (size < 0) {
-//		perror("sock_fd_write");
-//		close(SlaveSocket);
-//	    }
-//	}
-
-//    }
-//    ssize_t size;
-//    int i;
-//    int fd;
-
-//    fd = 1;
-//    size = sock_fd_write(sock, "1", 1, 1);
-//    printf ("wrote %d\n", size);
-//}
-
-//==============================================================================
-//
+// Launch options: -h <ip> -p <port> -d <directory>
 //==============================================================================
 int main(int argc, char *argv[]) {
+
+    #if defined DAEMON_APP
+    /* DAEMONIZE */
+    pid_t pid, sid;
+
+    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
+    fflush(stdout);
+
+    /* Fork off the parent process */
+    pid = fork();
+    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
+    fflush(stdout);
+    if (pid < 0) {
+	perror("daemonize fork");
+	exit(EXIT_FAILURE);
+    }
+    /* If we got a good PID, then
+       we can exit the parent process. */
+    if (pid > 0) {
+	exit(EXIT_SUCCESS);
+    }
+    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
+    fflush(stdout);
+    /* Change the file mode mask */
+    umask(0);
+
+    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
+    fflush(stdout);
+    /* Open any logs here */
+    if (initLog() < 0) {
+	perror("Init LOG");
+	exit(EXIT_FAILURE);
+    }
+
+    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
+    fflush(stdout);
+    /* Create a new SID for the child process */
+    sid = setsid();
+    if (sid < 0) {
+	/* Log any failure here */
+	perror("setsid");
+	exit(EXIT_FAILURE);
+    }
+
+    /* Change the current working directory */
+    if ((chdir("/")) < 0) {
+	/* Log any failure here */
+	perror("chdir");
+	exit(EXIT_FAILURE);
+    }
+
+
+    fprintf_mp(stdout, "Helloworld epta!\r\n");
+
+
+    /* Close out the standard file descriptors */
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+   /* end of daemonize */
+    #else
+    initLog();
+    #endif
+
+    memset (&globalArgs, 0, sizeof(globalArgs_t));
+    int opt;
+    while((opt = getopt(argc, argv, optString)) != -1) {
+	switch (opt) {
+	    case 'h': {
+		globalArgs.ipaddr = optarg;
+	    }break;
+	    case 'p': {
+		globalArgs.port = optarg;
+	    }break;
+	    case 'd': {
+		globalArgs.root_dir = optarg;
+	    }
+	}
+    }
+
+    if (!(globalArgs.ipaddr && globalArgs.port && globalArgs.root_dir)) return -1;
+
+    RootPath = globalArgs.root_dir;
+    uint16_t ServerPort;
+    sscanf(globalArgs.port, "%d", &ServerPort);
 
     struct sigaction sa;
     int rv = -1;
     int opt_enable = 1;
 
+    Manager *manager = Manager::instance();
+    if (!manager) {
+	return -1;
+	fprintf_mp(stderr, "Can\'t create the manager!");
+    }
+
     sa.sa_handler = signalHandler; // reap all dead processes
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-        perror("sigaction SIGCHLD");
+	fprintf_mp(stderr, "sigaction SIGCHLD");
         return -1;
     }
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        perror("sigaction SIGTERM");
+	fprintf_mp(stderr, "sigaction SIGTERM");
         return -1;
     }
 
-
     int MasterSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (MasterSocket < 0) {
-	perror("Socket creation failed!");
+   	fprintf_mp(stderr, "Socket creation failed! %s", strerror(errno));
 	return EXIT_FAILURE;
     }
 
     if (setsockopt(MasterSocket, SOL_SOCKET, SO_REUSEADDR, &opt_enable, sizeof(int)) == -1) {
-	perror("setsockopt");
+	fprintf_mp(stderr, "setsockopt %s", strerror(errno));
 	return -1;
     }
 
     struct sockaddr_in serv_addr;
     serv_addr.sin_addr.s_addr	= INADDR_ANY;
     serv_addr.sin_family	= AF_INET;
-    serv_addr.sin_port		= htons(DEFAULT_SERVER_PORT);
+    serv_addr.sin_port		= htons(ServerPort);
 
     if (bind(MasterSocket, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-	perror("server: bind");
+	fprintf_mp(stderr, "server: bind %s", strerror(errno));
 	return -1;
     }
 
-    MP_Manager.init();
+    manager->init();
 
     if (listen(MasterSocket, SOMAXCONN) < 0) {
-	perror("server: listen");
+	fprintf_mp(stderr, "server: listen");
 	return -1;
     }
-
-
-
-    /* Beyond this point we have to kill all the children processes first before return/exit! */
 
     /* Main server loop */
     while (1) {
 	int SlaveSocket = accept(MasterSocket, NULL, NULL);
 	if (SlaveSocket < 0) {
-	    perror("server: accept");
-
+	    fprintf_mp(stderr, "server: accept");
 	    return -1;
 	}
-	MP_Manager.do_work(SlaveSocket);
+	if (manager->do_work(SlaveSocket) == -1) {
+	    fprintf_mp(stderr, "do_work");
+	    return -1;
+	}
     }
-
-
-
-
-
-
     /* THE PARENT PROCESS MUST STILL ALIVE UNTIL AT LEAST ONE CHILD IS ALIVE! */
-//    pause();
 
+    deinitLog();
     return 0;
 }

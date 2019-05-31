@@ -4,8 +4,18 @@
 #include <sys/types.h>
 #include <poll.h>
 #include <vector>
+#include <unordered_map>
 
 #include "server.h"
+
+//------------------------------------------------------------------------------
+
+struct proc_times_t {
+    unsigned long utime;
+    unsigned long totaltime;
+};
+
+//------------------------------------------------------------------------------
 
 class Worker
 {
@@ -24,14 +34,21 @@ public:
     /* Notify the manager that socket processing is done */
     int done(int fd);
 
-    size_t jobs() const { return m_njobs; }
+    /* Set and get CPU usage value. It must used in manager process only! */
+    int CpuUsage() const { return m_cpu_usage; }
+    void setCpuUsageValue(int val);
+
     pid_t pid() const { return m_pid; }
+
+    int calcCpuUsage();
 private:
-    size_t  m_njobs; // Num of jobs (sockets) doing by the worker
+    int	    m_cpu_usage; // Total CPU usage
     pid_t   m_pid;
     int     m_sv[2];
 
-    std::vector<pollfd> m_poll_fds;
+    proc_times_t m_proc_times_old;
+
+    std::unordered_map<int, pollfd> m_pfds;
 
     HttpServer m_server;
 };

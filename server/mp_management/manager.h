@@ -7,7 +7,7 @@
 class Manager
 {
 public:
-    Manager();
+    static Manager* instance();
     int init();  /* Prefork all the workers here */
     Worker* getLeastBusyWorker();
 
@@ -15,7 +15,14 @@ public:
     void recvFromWorker(int fd);
 
     int killAll();
+public:
+    static int initWorkerMonitoring();
+    static void checkWorkersHandler(int sig);
 
+private:
+    Manager();
+
+    static Manager *m_instance;
 private:
     std::vector<Worker*> m_workers;
 };
