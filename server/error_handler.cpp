@@ -9,7 +9,7 @@ static const int FOR_THREAD = 0;
 static const int FOR_IPC    = 1;
 
 //------------------------------------------------------------------------------
-static const char *log_filepath = "mp_http.log";
+static const char *log_filepath = "/home/box/mp_http.log";
 static FILE *log_file = NULL;
 
 sem_t log_semaphore;
