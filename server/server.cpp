@@ -157,7 +157,6 @@ int HttpServer::onGET(char *request) {
 
 //    printf("GET handler is here! [%s %s %s]\r\n", type, url, http_ver);
 //    fflush(stdout);
-    return 0;
 
     if (strncmp(url, "/", 2) == 0) url = "/index.html";
     std::string filepath = m_www_root + url;
