@@ -48,7 +48,7 @@ ssize_t sock_fd_write(int sock, const void *buf, ssize_t buflen, int fd) {
     size = sendmsg(sock, &msg, 0);
 
     if (size < 0) {
-        fprintf_mp(stderr, "sendmsg");
+        fprintf_mp(stderr, "fd pass sendmsg\r\n");
     }
     return size;
 }
@@ -80,7 +80,7 @@ ssize_t sock_fd_read(int sock, void *buf, ssize_t bufsize, int *fd)
         msg.msg_controllen = sizeof(cmsgu.control);
         size = recvmsg (sock, &msg, 0);
         if (size < 0) {
-            fprintf_mp(stderr, "recvmsg");
+            fprintf_mp(stderr, "fd pass recvmsg\r\n");
             exit(1);
         }
         cmsg = CMSG_FIRSTHDR(&msg);
@@ -103,7 +103,7 @@ ssize_t sock_fd_read(int sock, void *buf, ssize_t bufsize, int *fd)
     } else {
         size = read (sock, buf, bufsize);
         if (size < 0) {
-            fprintf_mp(stderr, "read");
+            fprintf_mp(stderr, "fd pass read\r\n");
             exit(1);
         }
     }

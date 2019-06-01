@@ -9,7 +9,7 @@ static const int FOR_THREAD = 0;
 static const int FOR_IPC    = 1;
 
 //------------------------------------------------------------------------------
-static const char *log_filepath = "/home/box/mp_http.log";
+static const char *log_filepath = "mp_http.log";
 static FILE *log_file = NULL;
 
 sem_t log_semaphore;
@@ -51,6 +51,7 @@ int initLog() {
 //==============================================================================
 void deinitLog() {
     sem_destroy(&log_semaphore);
+    fclose(log_file);
 }
 
 //==============================================================================
@@ -58,7 +59,11 @@ void deinitLog() {
 //==============================================================================
 void fprintf_mp(FILE *stream, const char *fmt, ...) {
     if (!(stream && fmt)) return;
-    sem_wait(&log_semaphore);
+    if (sem_wait(&log_semaphore) < 0) {
+	#if defined DAEMON_APP
+	    fprintf(log_file, "ERROR! Can't lock semaphore: %s\r\n", strerror(errno));
+	#endif
+    }
     va_list va;
     va_start (va, fmt);
     #if defined DAEMON_APP
@@ -68,5 +73,9 @@ void fprintf_mp(FILE *stream, const char *fmt, ...) {
     fflush(stream);
     #endif
     va_end(va);
-    sem_post(&log_semaphore);
+    if (sem_post(&log_semaphore) < 0) {
+	#if defined DAEMON_APP
+	    fprintf(log_file, "ERROR! Can't unlock semaphore: %s\r\n", strerror(errno));
+	#endif
+    }
 }

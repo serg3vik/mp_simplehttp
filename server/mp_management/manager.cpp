@@ -41,15 +41,14 @@ Manager::Manager() {
 int dbg_counter = 0;
 
 int Manager::init() {
-//    printf("Master pid: %d [%d]\r\n", getpid(), ++dbg_counter);
+
     initWorkerMonitoring();
     for (auto w : m_workers) {
 	if (w->init() < 0) {
-	    fprintf_mp(stderr, "Worker creation error!");
+	    fprintf_mp(stderr, "Worker creation error!\r\n");
 	    return -1;
 	}
-//	printf(" Worker with PID %d successfully created!\r\n", w->pid());
-//	fflush(stdout);
+	fprintf_mp(stdout, "Worker with PID %d successfully created!\r\n", w->pid());
     }    
     return 0;
 }
@@ -58,6 +57,7 @@ int Manager::init() {
 //
 //==============================================================================
 
+/* Workaround for gcc4 which have no lambda support */
 static bool leastbusy(Worker *a, Worker *b) {
     return a->CpuUsage() < b->CpuUsage();
 }
@@ -102,10 +102,6 @@ int Manager::killAll() {
 //==============================================================================
 void Manager::checkWorkersHandler(int sig) {
 
-//    printf("MyPid: %d\r\n", getpid());
-//    fflush(stdout);
-//    alarm(1);
-
     Manager *manager = Manager::instance();
 
     for (auto p : manager->m_workers) {
@@ -128,7 +124,7 @@ int Manager::initWorkerMonitoring() {
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        fprintf_mp(stderr, "sigaction SIGALRM");
+        fprintf_mp(stderr, "sigaction SIGALRM\r\n");
         return -1;
     }
     alarm(1);

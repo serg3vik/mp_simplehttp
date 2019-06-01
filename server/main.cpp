@@ -31,7 +31,7 @@ const char *RootPath = nullptr;
 void signalHandler(int sig) {
 
     if (sig == SIGTERM) {
-	fprintf_mp(stdout, "Kill \'em ALL!\n");
+	fprintf_mp(stdout, "Kill \'em ALL!\r\n");
 	Manager::instance()->killAll();
 	deinitLog();
 	exit(1);
@@ -64,13 +64,8 @@ int main(int argc, char *argv[]) {
     /* DAEMONIZE */
     pid_t pid, sid;
 
-    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
-    fflush(stdout);
-
     /* Fork off the parent process */
     pid = fork();
-    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
-    fflush(stdout);
     if (pid < 0) {
 	perror("daemonize fork");
 	exit(EXIT_FAILURE);
@@ -80,21 +75,15 @@ int main(int argc, char *argv[]) {
     if (pid > 0) {
 	exit(EXIT_SUCCESS);
     }
-    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
-    fflush(stdout);
     /* Change the file mode mask */
     umask(0);
 
-    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
-    fflush(stdout);
     /* Open any logs here */
     if (initLog() < 0) {
 	perror("Init LOG");
 	exit(EXIT_FAILURE);
     }
 
-    fprintf(stdout, "Alive @ %d!\r\n", __LINE__);
-    fflush(stdout);
     /* Create a new SID for the child process */
     sid = setsid();
     if (sid < 0) {
@@ -153,29 +142,29 @@ int main(int argc, char *argv[]) {
     Manager *manager = Manager::instance();
     if (!manager) {
 	return -1;
-	fprintf_mp(stderr, "Can\'t create the manager!");
+	fprintf_mp(stderr, "Can\'t create the manager!\r\n");
     }
 
     sa.sa_handler = signalHandler; // reap all dead processes
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-	fprintf_mp(stderr, "sigaction SIGCHLD");
+	fprintf_mp(stderr, "sigaction SIGCHLD\r\n");
         return -1;
     }
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
-	fprintf_mp(stderr, "sigaction SIGTERM");
+	fprintf_mp(stderr, "sigaction SIGTERM\r\n");
         return -1;
     }
 
     int MasterSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (MasterSocket < 0) {
-   	fprintf_mp(stderr, "Socket creation failed! %s", strerror(errno));
+   	fprintf_mp(stderr, "Socket creation failed! %s\r\n", strerror(errno));
 	return EXIT_FAILURE;
     }
 
     if (setsockopt(MasterSocket, SOL_SOCKET, SO_REUSEADDR, &opt_enable, sizeof(int)) == -1) {
-	fprintf_mp(stderr, "setsockopt %s", strerror(errno));
+	fprintf_mp(stderr, "setsockopt %s\r\n", strerror(errno));
 	return -1;
     }
 
@@ -185,14 +174,14 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_port		= htons(ServerPort);
 
     if (bind(MasterSocket, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-	fprintf_mp(stderr, "server: bind %s", strerror(errno));
+	fprintf_mp(stderr, "server: bind %s\r\n", strerror(errno));
 	return -1;
     }
 
     manager->init();
 
     if (listen(MasterSocket, SOMAXCONN) < 0) {
-	fprintf_mp(stderr, "server: listen");
+	fprintf_mp(stderr, "server: listen\r\n");
 	return -1;
     }
 
@@ -200,11 +189,11 @@ int main(int argc, char *argv[]) {
     while (1) {
 	int SlaveSocket = accept(MasterSocket, NULL, NULL);
 	if (SlaveSocket < 0) {
-	    fprintf_mp(stderr, "server: accept");
+	    fprintf_mp(stderr, "server: accept\r\n");
 	    return -1;
 	}
 	if (manager->do_work(SlaveSocket) == -1) {
-	    fprintf_mp(stderr, "do_work");
+	    fprintf_mp(stderr, "do_work\r\n");
 	    return -1;
 	}
     }

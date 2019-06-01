@@ -113,7 +113,7 @@ int HttpServer::handleClientConection(int fd) {
 	    m_www_root = std::string(RootPath);
 
 	    if ((this->*(handler.fn))(m_request_buf.get()) < 0) {
-		fprintf_mp(stderr, "Error handling request!");
+		fprintf_mp(stderr, "Error handling request!\r\n");
 	    } else {
 		/* relocated to request handler */
 //		const size_t answer_size = m_answer_ss.str().size();
@@ -127,10 +127,10 @@ int HttpServer::handleClientConection(int fd) {
 //	    printf("Can\'t recognize http request!\r\n");
 	}
     } else if (size < 0) {
-	fprintf_mp(stderr, "recv");
+	fprintf_mp(stderr, "recv\r\n");
 	return -1;
     } else {
-	fprintf_mp(stderr, "socket was closed by client");
+	fprintf_mp(stderr, "socket was closed by client\r\n");
 //	fflush(stdout);
 	/* socket was closed by client */
     }
@@ -151,22 +151,14 @@ int HttpServer::onGET(char *request) {
     /* Ignoring HTTP parameters */
     url = strtok(url, "?");
 
-    fprintf_mp(stdout, "GET handler is here!");
+    fprintf_mp(stdout, "GET handler is here!\r\n");
 
     fprintf_mp(stdout, "URL: %s\r\n", (url != NULL) ? url : "NULL" );
-    return 0;
 
 //    printf("GET handler is here! [%s %s %s]\r\n", type, url, http_ver);
 //    fflush(stdout);
+    return 0;
 
-    /* Reading headers */
-    #if 0 /* Don't care on GET request */
-    char *pch = strtok(http_ver, "/r/n");
-    while(pch) {
-	pch = strtok(NULL, "/r/n");
-	// TODO: parse interesting headers
-    }
-    #endif
     if (strncmp(url, "/", 2) == 0) url = "/index.html";
     std::string filepath = m_www_root + url;
 
@@ -175,7 +167,7 @@ int HttpServer::onGET(char *request) {
 
     char datetime_str[32];
     if (getCurrentTime(datetime_str, 32) < 0) {
-	fprintf_mp(stderr, "getCurrentTime\n");
+	fprintf_mp(stderr, "getCurrentTime\r\n");
 	return -1;
     }
 
@@ -189,17 +181,14 @@ int HttpServer::onGET(char *request) {
     /* Check if the requested file exists */
     if( access( filepath.c_str(), F_OK ) != -1 ) {
 	if (realpath(filepath.c_str(), real_filepath) == NULL) {
-	    fprintf_mp(stderr, "realpath");
+	    fprintf_mp(stderr, "realpath\r\n");
 	    return -1;
 	}
 
 	f = fopen(real_filepath, "rb");
-	fprintf_mp(stderr, "File found!");// [%s]\r\n", real_filepath);
-//	fflush(stdout);
+	fprintf_mp(stdout, "File found! [%s]\r\n", real_filepath);
     } else {
 	fprintf_mp(stderr, "File NOT found!\r\n");
-//	fflush(stdout);
-
     }
 
     // TODO: Make separate handlers for ALL errors!
@@ -209,13 +198,12 @@ int HttpServer::onGET(char *request) {
 
     /* Headers */
     if (f) {
-
-
 	ssize_t filesize = getFileSize(real_filepath);
 	if (filesize < 0) {
-	    fprintf_mp(stderr, "getFileSize");
+	    fprintf_mp(stderr, "getFileSize\r\n");
 	    return -1;
 	}
+	fprintf_mp(stdout, "Filesize: %d\r\n", filesize);
 	char filecreatetime_str[32];
 	getFileCreationTime(real_filepath, filecreatetime_str, 32);
 
@@ -237,7 +225,7 @@ int HttpServer::onGET(char *request) {
     m_answer_ss << "\r\n";
 
     if (send(m_active_socket, m_answer_ss.str().c_str() , m_answer_ss.str().size(), MSG_NOSIGNAL) < 0) {
-	fprintf_mp(stderr, "send answer headers");
+	fprintf_mp(stderr, "send answer headers\r\n");
 	return -1;
     }
 
@@ -245,7 +233,7 @@ int HttpServer::onGET(char *request) {
 	ssize_t read_size = 0;
 	while ((read_size = fread(m_answer_filebuf.get(), sizeof(m_answer_filebuf[0]), ANSWER_FILEBUF_SIZE, f )) > 0) {
 	    if (send(m_active_socket, m_answer_filebuf.get(), read_size, MSG_NOSIGNAL) < 0) {
-		fprintf_mp(stderr, "send answer file");
+		fprintf_mp(stderr, "send answer file\r\n");
 		return -1;
 	    }
 //	    printf(" %d bytes sent to socket\r\n", read_size);
@@ -253,7 +241,7 @@ int HttpServer::onGET(char *request) {
 	}
     } else {
 	if (send(m_active_socket, DefaultError_404.c_str(), DefaultError_404.size(), MSG_NOSIGNAL) < 0) {
-	    fprintf_mp(stderr, "send answer file");
+	    fprintf_mp(stderr, "send answer file\r\n");
 	    return -1;
 	}
 

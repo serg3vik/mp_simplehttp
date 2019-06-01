@@ -14,7 +14,7 @@
 ssize_t getFileSize(const char *filepath) {
     struct stat attr;
     if (stat(filepath, &attr) < 0) {
-	fprintf_mp(stderr, "get file stat");
+	fprintf_mp(stderr, "get file stat\r\n");
 	return -1;
     }
     return attr.st_size;

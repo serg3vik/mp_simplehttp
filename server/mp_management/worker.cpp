@@ -25,7 +25,7 @@ Worker::Worker() :
 //==============================================================================
 int Worker::init() {
     if (socketpair(AF_LOCAL, SOCK_STREAM, 0, m_sv) < 0) {
-	fprintf_mp(stderr, "worker socketpair");
+	fprintf_mp(stderr, "worker socketpair\r\n");
 	return -1;
     }
     switch ((m_pid = fork())) {
@@ -36,7 +36,7 @@ int Worker::init() {
 	return child_loop();
 	break;
     case -1:
-	fprintf_mp(stderr, "worker fork");
+	fprintf_mp(stderr, "worker fork\r\n");
 	return -1;
     default:
 	/* parent process */
@@ -73,11 +73,11 @@ int Worker::child_loop() { // Executes in it's own process! Should never return!
 
 	int pfd = poll(active_pfds.data(), active_pfds.size(), -1);
 	if (pfd < 0) {
-	    fprintf_mp(stderr, "poll");
+	    fprintf_mp(stderr, "poll\r\n");
 	    return -2;
 	}
 
-	fprintf_mp(stdout, "Poll passed!");
+	fprintf_mp(stdout, "Poll passed [pid: %d]!\r\n", getpid());
 	int c = 0;
 	for (auto p : active_pfds) {
 //	    printf(":%d: %d | 0x%08X | 0x%08X\r\n", c++, p.fd, p.events, p.revents);
@@ -118,11 +118,11 @@ int Worker::child_loop() { // Executes in it's own process! Should never return!
 
 		/* Close the socket */
 		if (shutdown(client_fd, SHUT_RDWR) < 0) {
-		    fprintf_mp(stderr, "shutdown");
+		    fprintf_mp(stderr, "shutdown\r\n");
 		    return -1;
 		}
 		if (close(client_fd) < 0) {
-		    fprintf_mp(stderr, "close");
+		    fprintf_mp(stderr, "close\r\n");
 		    return -1;
 		}
 
@@ -187,7 +187,7 @@ int Worker::calcCpuUsage() {
     FILE *stat_file = fopen(stat_path, "r");
     if (!stat_file) {
 //	fprintf(LOG_FILE, "Process with pid=%d doesn\'t exists! %s\r\n",  this->pid(), stat_path);
-	fprintf_mp(stderr, "Process with desired PID does not exist!");
+	fprintf_mp(stderr, "Process with desired PID does not exist!\r\n");
 	return -1;
     }
 
@@ -209,13 +209,13 @@ int Worker::calcCpuUsage() {
 	    pch = strstr(pch + 1, needle);
 	} else {
 //	    fprintf(LOG_FILE, "ACHTUNG! pch becames NULL at %d pos!\r\n", i);
-	    fprintf_mp(stderr, "ACHTUNG! pch is NULL!");
+	    fprintf_mp(stderr, "ACHTUNG! pch is NULL!\r\n");
 	}
     }
     if (!pch) return -1;
 
     if (sscanf(pch, "%lu", &proc_times_current.utime) < 0) {
-	fprintf_mp(stderr, "sscanf");
+	fprintf_mp(stderr, "sscanf\r\n");
 	return -1;
     }
 
