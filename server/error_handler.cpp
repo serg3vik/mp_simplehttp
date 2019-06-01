@@ -69,7 +69,7 @@ void fprintf_mp(FILE *stream, const char *fmt, ...) {
     }
     va_list va;
     va_start (va, fmt);
-    #if 1//defined DAEMON_APP
+    #if defined DAEMON_APP
     if (vfprintf(log_file, fmt, va) <= 0) {
 	#if !defined DAEMON_APP
 	    fprintf(stderr, "Can\'t write to log! %s\r\n", strerror(errno));
