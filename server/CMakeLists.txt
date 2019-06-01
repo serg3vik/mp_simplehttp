@@ -8,7 +8,7 @@ include_directories(
 mp_management
 )
 
-add_definitions(-DDAEMON_APP)
+#add_definitions(-DDAEMON_APP)
 
 aux_source_directory(. SRC_LIST)
 aux_source_directory(./mp_management SRC_LIST)

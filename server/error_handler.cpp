@@ -9,7 +9,7 @@ static const int FOR_THREAD = 0;
 static const int FOR_IPC    = 1;
 
 //------------------------------------------------------------------------------
-static const char *log_filepath = "/home/box/mp_http.log";
+static const char *log_filepath = "mp_http.log";
 static FILE *log_file = NULL;
 
 sem_t log_semaphore;
@@ -58,6 +58,9 @@ void deinitLog() {
 //
 //==============================================================================
 void fprintf_mp(FILE *stream, const char *fmt, ...) {
+#if !defined DAEMON_APP
+    fprintf(stderr, "+");
+#endif
     if (!(stream && fmt)) return;
     if (sem_wait(&log_semaphore) < 0) {
 	#if defined DAEMON_APP
@@ -66,8 +69,12 @@ void fprintf_mp(FILE *stream, const char *fmt, ...) {
     }
     va_list va;
     va_start (va, fmt);
-    #if defined DAEMON_APP
-    vfprintf(log_file, fmt, va);
+    #if 1//defined DAEMON_APP
+    if (vfprintf(log_file, fmt, va) <= 0) {
+	#if !defined DAEMON_APP
+	    fprintf(stderr, "Can\'t write to log! %s\r\n", strerror(errno));
+	#endif
+    }
     #else
     vfprintf(stream, fmt, va);
     fflush(stream);
@@ -78,4 +85,7 @@ void fprintf_mp(FILE *stream, const char *fmt, ...) {
 	    fprintf(log_file, "ERROR! Can't unlock semaphore: %s\r\n", strerror(errno));
 	#endif
     }
+#if !defined DAEMON_APP
+    fprintf(stderr, "-");
+#endif
 }
