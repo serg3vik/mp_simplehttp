@@ -211,6 +211,7 @@ int HttpServer::onGET(char *request) {
 	m_server_headers["Content-Length: "] = std::to_string(filesize);
 
     } else {
+	status = ANSWER_NOTFOUND;
 	m_server_headers["Content-Length: "] = DefaultError_404.size();
 	m_server_headers["Content-Type "] = std::string("text/html");
     }

@@ -7,7 +7,7 @@ include_directories(
 ./server/mp_management
 )
 
-#add_definitions(-DDAEMON_APP)
+add_definitions(-DDAEMON_APP)
 
 aux_source_directory(./server SRC_LIST)
 aux_source_directory(./server/mp_management SRC_LIST)
