@@ -77,7 +77,7 @@ int Worker::child_loop() { // Executes in it's own process! Should never return!
 	    return -2;
 	}
 
-	fprintf_mp(stdout, "Poll passed [pid: %d]!\r\n", getpid());
+//	fprintf_mp(stdout, "Poll passed [pid: %d]!\r\n", getpid());
 	int c = 0;
 	for (auto p : active_pfds) {
 //	    printf(":%d: %d | 0x%08X | 0x%08X\r\n", c++, p.fd, p.events, p.revents);
@@ -118,7 +118,7 @@ int Worker::child_loop() { // Executes in it's own process! Should never return!
 
 		/* Close the socket */
 		if (shutdown(client_fd, SHUT_RDWR) < 0) {
-		    fprintf_mp(stderr, "shutdown\r\n");
+            fprintf_mp(stderr, "shutdown\r\n");
 		    return -1;
 		}
 		if (close(client_fd) < 0) {

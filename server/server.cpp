@@ -97,42 +97,42 @@ int HttpServer::handleClientConection(int fd) {
     m_active_socket = fd;
     int size = recv(fd, m_request_buf.get(), MAX_REQUEST_SIZE, MSG_NOSIGNAL);
     if (size > 0) { /* We read some data */
-	/* Search the appropriate handler */
-	request_t handler = {NULL, NULL};
-	int idx = 0;
-	while ((handler = HttpServer::RequestHandlers[idx]).name != NULL) {
-	    if (strncmp(handler.name, m_request_buf.get(), strlen(handler.name)) == 0) {
-		break;
-	    }
-	}
+        /* Search the appropriate handler */
+        request_t handler = {NULL, NULL};
+        int idx = 0;
+        while ((handler = HttpServer::RequestHandlers[idx]).name != NULL) {
+            if (strncmp(handler.name, m_request_buf.get(), strlen(handler.name)) == 0) {
+                break;
+            }
+        }
 
-	if (handler.name && handler.fn) {
-	    /* clear the output buffer first! */
-	    m_answer_ss.str(std::string());
-	    /* set root file path */
-	    m_www_root = std::string(RootPath);
+        if (handler.name && handler.fn) {
+            /* clear the output buffer first! */
+            m_answer_ss.str(std::string());
+            /* set root file path */
+            m_www_root = std::string(RootPath);
 
-	    if ((this->*(handler.fn))(m_request_buf.get()) < 0) {
-		fprintf_mp(stderr, "Error handling request!\r\n");
-	    } else {
-		/* relocated to request handler */
-//		const size_t answer_size = m_answer_ss.str().size();
-//		ssize_t size = send(fd, m_answer_ss.str().c_str(), answer_size, MSG_NOSIGNAL);
-//		if (size < 0) {
-//		    perror("send answer");
-//		    return -1;
-//		}
-	    }
-	} else {
-//	    printf("Can\'t recognize http request!\r\n");
-	}
+            if ((this->*(handler.fn))(m_request_buf.get()) < 0) {
+                fprintf_mp(stderr, "Error handling request!\r\n");
+            } else {
+            /* relocated to request handler */
+    //		const size_t answer_size = m_answer_ss.str().size();
+    //		ssize_t size = send(fd, m_answer_ss.str().c_str(), answer_size, MSG_NOSIGNAL);
+    //		if (size < 0) {
+    //		    perror("send answer");
+    //		    return -1;
+    //		}
+            }
+        } else {
+    //	    printf("Can\'t recognize http request!\r\n");
+        }
     } else if (size < 0) {
-	fprintf_mp(stderr, "recv\r\n");
-	return -1;
+        fprintf_mp(stderr, "server recv (%s) \r\n", strerror(errno));
+        return -1;
     } else {
-	fprintf_mp(stderr, "socket was closed by client\r\n");
-//	fflush(stdout);
-	/* socket was closed by client */
+        fprintf_mp(stderr, "socket was closed by client\r\n");
+    //	fflush(stdout);
+        /* socket was closed by client */
     }
     return 0;
 }
@@ -151,9 +151,8 @@ int HttpServer::onGET(char *request) {
     /* Ignoring HTTP parameters */
     url = strtok(url, "?");
 
-    fprintf_mp(stdout, "GET handler is here!\r\n");
-
-    fprintf_mp(stdout, "URL: %s\r\n", (url != NULL) ? url : "NULL" );
+//    fprintf_mp(stdout, "GET handler is here!\r\n");
+//    fprintf_mp(stdout, "URL: %s\r\n", (url != NULL) ? url : "NULL" );
 
 //    printf("GET handler is here! [%s %s %s]\r\n", type, url, http_ver);
 //    fflush(stdout);
@@ -230,21 +229,21 @@ int HttpServer::onGET(char *request) {
     }
 
     if (f) {
-	ssize_t read_size = 0;
-	while ((read_size = fread(m_answer_filebuf.get(), sizeof(m_answer_filebuf[0]), ANSWER_FILEBUF_SIZE, f )) > 0) {
-	    if (send(m_active_socket, m_answer_filebuf.get(), read_size, MSG_NOSIGNAL) < 0) {
-		fprintf_mp(stderr, "send answer file\r\n");
-		return -1;
-	    }
-//	    printf(" %d bytes sent to socket\r\n", read_size);
-//	    fflush(stdout);
-	}
+        ssize_t read_size = 0;
+        while ((read_size = fread(m_answer_filebuf.get(), sizeof(m_answer_filebuf[0]), ANSWER_FILEBUF_SIZE, f )) > 0) {
+            if (send(m_active_socket, m_answer_filebuf.get(), read_size, MSG_NOSIGNAL) < 0) {
+            fprintf_mp(stderr, "send answer file\r\n");
+            return -1;
+            }
+    //	    printf(" %d bytes sent to socket\r\n", read_size);
+    //	    fflush(stdout);
+        }
+        fclose(f);
     } else {
-	if (send(m_active_socket, DefaultError_404.c_str(), DefaultError_404.size(), MSG_NOSIGNAL) < 0) {
-	    fprintf_mp(stderr, "send answer file\r\n");
-	    return -1;
-	}
-
+        if (send(m_active_socket, DefaultError_404.c_str(), DefaultError_404.size(), MSG_NOSIGNAL) < 0) {
+            fprintf_mp(stderr, "send answer file\r\n");
+            return -1;
+        }
     }
 
     return 0;

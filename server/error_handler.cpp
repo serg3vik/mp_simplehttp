@@ -58,9 +58,6 @@ void deinitLog() {
 //
 //==============================================================================
 void fprintf_mp(FILE *stream, const char *fmt, ...) {
-#if !defined DAEMON_APP
-    fprintf(stderr, "+");
-#endif
     if (!(stream && fmt)) return;
     if (sem_wait(&log_semaphore) < 0) {
 	#if defined DAEMON_APP
@@ -85,7 +82,4 @@ void fprintf_mp(FILE *stream, const char *fmt, ...) {
 	    fprintf(log_file, "ERROR! Can't unlock semaphore: %s\r\n", strerror(errno));
 	#endif
     }
-#if !defined DAEMON_APP
-    fprintf(stderr, "-");
-#endif
 }

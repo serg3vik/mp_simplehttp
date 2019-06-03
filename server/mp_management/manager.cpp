@@ -78,9 +78,9 @@ Worker* Manager::getLeastBusyWorker() {
 int Manager::do_work(int fd) { // Parent process
     Worker *w = getLeastBusyWorker();
     if (w) {
-	return w->start(fd);
+        return w->start(fd);
     } else {
-	return -1;
+        return -1;
     }
 }
 

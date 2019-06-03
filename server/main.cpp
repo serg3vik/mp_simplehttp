@@ -181,21 +181,31 @@ int main(int argc, char *argv[]) {
     manager->init();
 
     if (listen(MasterSocket, SOMAXCONN) < 0) {
-	fprintf_mp(stderr, "server: listen\r\n");
-	return -1;
+        fprintf_mp(stderr, "server: listen (%s)\r\n", strerror(errno));
+        return -1;
     }
 
     /* Main server loop */
     while (1) {
-	int SlaveSocket = accept(MasterSocket, NULL, NULL);
-	if (SlaveSocket < 0) {
-	    fprintf_mp(stderr, "server: accept\r\n");
-	    return -1;
-	}
-	if (manager->do_work(SlaveSocket) == -1) {
-	    fprintf_mp(stderr, "do_work\r\n");
-	    return -1;
-	}
+        int SlaveSocket = accept(MasterSocket, NULL, NULL);
+        if (SlaveSocket < 0) {
+            fprintf_mp(stderr, "server: accept (%s)\r\n", strerror(errno));
+            return -1;
+        }
+        if (manager->do_work(SlaveSocket) == -1) {
+            fprintf_mp(stderr, "do_work\r\n");
+            return -1;
+        }
+
+//        /* Close the socket */
+//        if (shutdown(SlaveSocket, SHUT_RDWR) < 0) {
+//            fprintf_mp(stderr, "main shutdown\r\n");
+//            return -1;
+//        }
+        if (close(SlaveSocket) < 0) {
+            fprintf_mp(stderr, "main close\r\n");
+            return -1;
+        }
     }
     /* THE PARENT PROCESS MUST STILL ALIVE UNTIL AT LEAST ONE CHILD IS ALIVE! */
 
