@@ -178,15 +178,15 @@ int HttpServer::onGET(char *request) {
 
     /* Check if the requested file exists */
     if( access( filepath.c_str(), F_OK ) != -1 ) {
-	if (realpath(filepath.c_str(), real_filepath) == NULL) {
-	    fprintf_mp(stderr, "realpath\r\n");
-	    return -1;
-	}
+        if (realpath(filepath.c_str(), real_filepath) == NULL) {
+            fprintf_mp(stderr, "realpath\r\n");
+            return -1;
+        }
 
-	f = fopen(real_filepath, "rb");
-	fprintf_mp(stdout, "File found! [%s]\r\n", real_filepath);
+        f = fopen(real_filepath, "rb");
+        fprintf_mp(stdout, "File found! [%s]\r\n", real_filepath);
     } else {
-	fprintf_mp(stderr, "File NOT found!\r\n");
+        fprintf_mp(stderr, "File NOT found!\r\n");
     }
 
     // TODO: Make separate handlers for ALL errors!
@@ -196,37 +196,41 @@ int HttpServer::onGET(char *request) {
 
     /* Headers */
     if (f) {
-	ssize_t filesize = getFileSize(real_filepath);
-	if (filesize < 0) {
-	    fprintf_mp(stderr, "getFileSize\r\n");
-	    return -1;
-	}
-	fprintf_mp(stdout, "Filesize: %d\r\n", filesize);
-	char filecreatetime_str[32];
-	getFileCreationTime(real_filepath, filecreatetime_str, 32);
+        ssize_t filesize = getFileSize(real_filepath);
+        if (filesize < 0) {
+            fprintf_mp(stderr, "getFileSize\r\n");
+            return -1;
+        }
+        fprintf_mp(stdout, "Filesize: %d\r\n", filesize);
+        char filecreatetime_str[32];
+        getFileCreationTime(real_filepath, filecreatetime_str, 32);
 
-	m_server_headers["Last-Modified: "] = std::string(filecreatetime_str);
-	m_server_headers["Content-Type: "] = MimeTypes.at(std::string(getFileExtension(real_filepath)));
-	m_server_headers["Content-Length: "] = std::to_string(filesize);
+        m_server_headers["Last-Modified: "] = std::string(filecreatetime_str);
+        m_server_headers["Content-Type: "] = MimeTypes.at(std::string(getFileExtension(real_filepath)));
+        m_server_headers["Content-Length: "] = std::to_string(filesize);
 
     } else {
-	status = ANSWER_NOTFOUND;
-	m_server_headers["Content-Length: "] = DefaultError_404.size();
-	m_server_headers["Content-Type "] = std::string("text/html");
+        status = ANSWER_NOTFOUND;
+        m_server_headers["Content-Length: "] = DefaultError_404.size();
+        m_server_headers["Content-Type: "] = std::string("text/html");
     }
 
 
     m_answer_ss << status << "\r\n";
 
     for (auto hdr : m_server_headers) {
-	m_answer_ss << hdr.first << hdr.second << "\r\n";
+        m_answer_ss << hdr.first << hdr.second << "\r\n";
     }
     m_answer_ss << "\r\n";
 
     if (send(m_active_socket, m_answer_ss.str().c_str() , m_answer_ss.str().size(), MSG_NOSIGNAL) < 0) {
-	fprintf_mp(stderr, "send answer headers\r\n");
-	return -1;
+        fprintf_mp(stderr, "send answer headers\r\n");
+        return -1;
     }
+
+#if !defined DAEMON_APP
+    std::cout << m_answer_ss.str() << std::flush;
+#endif
 
     if (f) {
         ssize_t read_size = 0;
